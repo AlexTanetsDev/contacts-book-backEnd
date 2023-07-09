@@ -16,12 +16,16 @@ authRouter.post(
 );
 
 // Mail verify
-authRouter.get("/verify/:verificationToken", authCtrl.verification);
-
-// Resend verify mail
 authRouter.post(
   "/verify",
   validateBody(schemas.verifySchema),
+  authCtrl.verification
+);
+
+// Resend verify mail
+authRouter.post(
+  "/verify-resend",
+  validateBody(schemas.verifyResendSchema),
   authCtrl.resendVerification
 );
 

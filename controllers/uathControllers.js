@@ -5,7 +5,6 @@ const gravatar = require("gravatar");
 const path = require("path");
 const fs = require("fs/promises");
 const Jimp = require("jimp");
-const { v4: uuid } = require("uuid");
 
 const { HttpError, controllersWrapper, sendEmail } = require("../helpers");
 
@@ -23,35 +22,65 @@ const register = async (req, res) => {
 
   const hashPassword = await bcrypt.hash(password, 10);
   const avatarURL = gravatar.url(email);
-  const verificationToken = uuid();
+  const payload = {
+    email,
+  };
 
-  await User.create({
+  const verificationToken = jwt.sign(payload, SECRET_KEY, {
+    expiresIn: 420,
+  });
+  const randomKey = Math.floor(Math.random() * (9999 - 1000)) + 1000;
+  const verificationKey = randomKey.toString();
+  const newUser = await User.create({
     ...req.body,
     password: hashPassword,
     avatarURL,
     verificationToken,
+    verificationKey,
   });
 
-  await sendEmail(email, verificationToken);
+  await sendEmail(email, verificationKey);
 
   res.status(201).json({
-    message: "",
+    message: "OK",
+    verifyToken: newUser.verificationToken,
   });
 };
 
 const verification = async (req, res) => {
-  const { verificationToken } = req.params;
-  const user = await User.findOne({ verificationToken });
-  if (!user) {
-    throw HttpError(404, "User not found");
+  const { verificationToken, verificationKey } = req.body;
+  let user;
+  try {
+    const { email } = jwt.verify(verificationToken, SECRET_KEY);
+    user = await User.findOne({ email });
+    if (
+      !user ||
+      !user.verificationToken ||
+      user.verificationToken !== verificationToken
+    ) {
+      throw HttpError(400, "User not found or time is out, please try again");
+    }
+  } catch (error) {
+    throw HttpError(400, "User not found or time is out, please try again");
   }
 
-  await User.findByIdAndUpdate(user._id, {
-    verificationToken: null,
-    verify: true,
-  });
+  if (user.verificationKey === verificationKey) {
+    await User.findByIdAndUpdate(user._id, {
+      verificationToken: null,
+      verify: true,
+    });
+    res.json({ message: "Verification successful" });
+    return;
+  }
 
-  res.json({ message: "Verification successful" });
+  if (user.verificationCount !== 3) {
+    await User.findByIdAndUpdate(user._id, {
+      verificationCount: user.verificationCount + 1,
+    });
+    throw HttpError(400, "Wrong code, try again");
+  }
+
+  throw HttpError(400, "Verification failled try again");
 };
 
 const resendVerification = async (req, res) => {
@@ -76,7 +105,7 @@ const login = async (req, res) => {
   if (!user) {
     throw HttpError(401, "Email or password is wrong");
   }
-  const passwordCompare = await bcrypt.compare(password, user.password);
+  const passwordCompare = bcrypt.compare(password, user.password);
   if (!passwordCompare) {
     throw HttpError(401, "Password is wrong");
   }
