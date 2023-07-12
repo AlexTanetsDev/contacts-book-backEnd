@@ -42,7 +42,7 @@ const register = async (req, res) => {
   await sendEmail(email, verificationKey);
 
   res.status(201).json({
-    message: "OK",
+    message: "Verify email send success",
     verifyToken: newUser.verificationToken,
   });
 };
@@ -94,9 +94,24 @@ const resendVerification = async (req, res) => {
     throw HttpError(400, "Verification has already been passed");
   }
 
-  await sendEmail(email, user.verificationToken);
+  const payload = {
+    email,
+  };
 
-  res.json({ message: "Verify email send success" });
+  const verificationToken = jwt.sign(payload, SECRET_KEY, {
+    expiresIn: 420,
+  });
+  const randomKey = Math.floor(Math.random() * (9999 - 1000)) + 1000;
+  const verificationKey = randomKey.toString();
+
+  await User.findByIdAndUpdate(user._id, {
+    verificationToken,
+    verificationKey,
+  });
+
+  await sendEmail(email, verificationKey);
+
+  res.json({ message: "Verify email send success", verificationToken });
 };
 
 const login = async (req, res) => {
