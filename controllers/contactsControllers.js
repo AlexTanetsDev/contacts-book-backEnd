@@ -66,6 +66,22 @@ const updateFavorite = async (req, res) => {
   res.json(result);
 };
 
+const updateContactInfo = async (req, res) => {
+  const { contactId } = req.params;
+  const { _id: owner } = req.user;
+  const result = await Contact.findOneAndUpdate(
+    { contactId, owner },
+    req.body,
+    {
+      new: true,
+    }
+  );
+  if (!result) {
+    throw HttpError(404, "Not found");
+  }
+  res.json(result);
+};
+
 const deleteById = async (req, res) => {
   const { contactId } = req.params;
   const { _id: owner } = req.user;
@@ -85,4 +101,5 @@ module.exports = {
   updateById: controllersWrapper(updateById),
   updateFavorite: controllersWrapper(updateFavorite),
   deleteById: controllersWrapper(deleteById),
+  updateContactInfo: controllersWrapper(updateContactInfo),
 };

@@ -126,9 +126,27 @@ const login = async (req, res) => {
   }
 
   if (!user.verify) {
-    await sendEmail(email, user.verificationToken);
+    const payload = {
+      email,
+    };
 
-    throw HttpError(401, "Please, verify your email");
+    const verificationToken = jwt.sign(payload, SECRET_KEY, {
+      expiresIn: 420,
+    });
+    const randomKey = Math.floor(Math.random() * (9999 - 1000)) + 1000;
+    const verificationKey = randomKey.toString();
+
+    await User.findByIdAndUpdate(user._id, {
+      verificationToken,
+      verificationKey,
+    });
+
+    await sendEmail(email, verificationKey);
+
+    throw HttpError(
+      401,
+      "Please, verify your email. Verification email send sucsess"
+    );
   }
 
   const payload = {

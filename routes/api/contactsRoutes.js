@@ -47,4 +47,14 @@ router.patch(
   controllers.updateFavorite
 );
 
+// Update related info
+
+router.patch(
+  "/:contactId/info",
+  authentificate,
+  isValidId,
+  validateBody(schemas.updateContactInfoSchema),
+  controllers.updateContactInfo
+);
+
 module.exports = router;

@@ -8,6 +8,8 @@ const emailPattern =
 const phonePattern =
   /^\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}$/;
 
+const datePattern = /^(0?[1-9]|[12][0-9]|3[01])[/-](0?[1-9]|1[012])[/-]\d{4}$/;
+
 const contactSchema = new Schema(
   {
     name: {
@@ -27,6 +29,14 @@ const contactSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    birthday: {
+      type: String,
+      match: datePattern,
+    },
+    relatedInfo: {
+      type: String,
+      default: "",
+    },
     owner: {
       type: Schema.Types.ObjectId,
       ref: "user",
@@ -44,7 +54,6 @@ const addSchema = Joi.object({
     .messages({ "any.required": "missing field name" }),
   email: Joi.string().pattern(emailPattern).messages({
     "string.pattern.base": "It's Not a valid email! Please check your input",
-    // "any.required": "missing field email",
   }),
   phone: Joi.string().pattern(phonePattern).required().messages({
     "string.pattern.base":
@@ -52,6 +61,10 @@ const addSchema = Joi.object({
     "any.required": "missing field phone",
   }),
   favorite: Joi.boolean(),
+  birthday: Joi.string().pattern(datePattern).messages({
+    "string.pattern.base": "It's Not a valid date! Please check your input",
+  }),
+  relatedInfo: Joi.string(),
 });
 
 const updateContactSchema = Joi.object({
@@ -64,6 +77,9 @@ const updateContactSchema = Joi.object({
       "Phone number must be digits and can contain spaces, dashes, parentheses and can start with +",
   }),
   favorite: Joi.boolean(),
+  birthday: Joi.string().pattern(datePattern).messages({
+    "string.pattern.base": "It's Not a valid date! Please check your input",
+  }),
 });
 
 const updateFavoriteSchema = Joi.object({
@@ -72,10 +88,17 @@ const updateFavoriteSchema = Joi.object({
     .messages({ "any.required": "missing field favorite" }),
 });
 
+const updateContactInfoSchema = Joi.object({
+  relatedInfo: Joi.string()
+    .required()
+    .messages({ "any.required": "Contact info is required" }),
+});
+
 const schemas = {
   addSchema,
   updateFavoriteSchema,
   updateContactSchema,
+  updateContactInfoSchema,
 };
 
 const Contact = model("contact", contactSchema);

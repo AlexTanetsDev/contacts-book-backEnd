@@ -1,6 +1,6 @@
 const express = require("express");
 
-const authCtrl = require("../../controllers/uathControllers");
+const authCtrl = require("../../controllers/authControllers");
 
 const { validateBody, authentificate, upload } = require("../../middlewares");
 
@@ -30,7 +30,7 @@ authRouter.post(
 );
 
 // authRouter// signin
-authRouter.post("/login", validateBody(schemas.authSchema), authCtrl.login);
+authRouter.post("/login", validateBody(schemas.loginSchema), authCtrl.login);
 
 // get current user
 authRouter.get("/current", authentificate, authCtrl.getCurrent);
