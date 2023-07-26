@@ -118,7 +118,7 @@ const login = async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
   if (!user) {
-    throw HttpError(401, "Email or password is wrong");
+    throw HttpError(404, `User with email ${email} not found`);
   }
   const passwordCompare = bcrypt.compare(password, user.password);
   if (!passwordCompare) {
@@ -160,6 +160,8 @@ const login = async (req, res) => {
     token,
     user: {
       email: user.email,
+      name: user.name,
+      avatar: user.avatarURL,
     },
   });
 };
@@ -167,8 +169,16 @@ const login = async (req, res) => {
 const getCurrent = async (req, res) => {
   const { email } = req.user;
 
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw HttpError(404, `User not found`);
+  }
+
   res.json({
-    email,
+    email: user.email,
+    name: user.name,
+    avatar: user.avatarURL,
   });
 };
 
@@ -176,7 +186,7 @@ const logout = async (req, res) => {
   const { _id } = req.user;
   await User.findByIdAndUpdate(_id, { token: "" });
 
-  res.status(204);
+  res.status(204).json("Logout sucsess");
 };
 
 const updateAvatar = async (req, res) => {
